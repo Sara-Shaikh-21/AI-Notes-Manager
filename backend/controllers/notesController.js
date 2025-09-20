@@ -1,76 +1,48 @@
-const db = require('../db');
-console.error(err);
-res.status(500).json({ message: 'Server error' });
+import pool from "../db.js";
+import OpenAI from "openai";
 
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-exports.deleteNote = async (req, res) => {
+export const createNote = async (req, res) => {
+    const { content } = req.body;
     try {
-        await db.query('DELETE FROM notes WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
-        res.json({ message: 'Deleted' });
+        const result = await pool.query(
+            "INSERT INTO notes (user_id, content) VALUES ($1,$2) RETURNING *",
+            [req.user.id, content]
+        );
+        res.json(result.rows[0]);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(400).json({ error: err.message });
     }
 };
 
+export const getNotes = async (req, res) => {
+    const result = await pool.query("SELECT * FROM notes WHERE user_id=$1", [req.user.id]);
+    res.json(result.rows);
+};
 
-// Summarize using OpenAI (Chat Completions / GPT)
-exports.summarizeNote = async (req, res) => {
+export const summarizeNote = async (req, res) => {
+    const { content } = req.body;
     try {
-        const noteRes = await db.query('SELECT content FROM notes WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
-        if (!noteRes.rows.length) return res.status(404).json({ message: 'Not found' });
-        const content = noteRes.rows[0].content;
-
-
-        const prompt = `Summarize the following text in 2-3 sentences, keep it concise:\n\n${content}`;
-
-
-        const ai = await openai.createChatCompletion({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 200,
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: `Summarize this: ${content}` }]
         });
-
-
-        const summary = ai.data.choices[0].message.content.trim();
-
-
-        // store summary in notes table (optional column summary)
-        await db.query('UPDATE notes SET summary = $1 WHERE id = $2', [summary, req.params.id]);
-
-
-        res.json({ summary });
+        res.json({ summary: response.choices[0].message.content });
     } catch (err) {
-        console.error(err?.response?.data || err);
-        res.status(500).json({ message: 'AI error' });
+        res.status(500).json({ error: err.message });
     }
 };
 
-
-exports.translateNote = async (req, res) => {
-    const { target = 'Spanish' } = req.body; // default Spanish
+export const translateNote = async (req, res) => {
+    const { content, lang } = req.body;
     try {
-        const noteRes = await db.query('SELECT content FROM notes WHERE id = $1 AND user_id = $2', [req.params.id, req.user.id]);
-        if (!noteRes.rows.length) return res.status(404).json({ message: 'Not found' });
-        const content = noteRes.rows[0].content;
-
-
-        const prompt = `Translate the following text into ${target} preserving meaning and tone:\n\n${content}`;
-
-
-        const ai = await openai.createChatCompletion({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 500,
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: `Translate this into ${lang}: ${content}` }]
         });
-
-
-        const translation = ai.data.choices[0].message.content.trim();
-
-
-        res.json({ translation });
+        res.json({ translation: response.choices[0].message.content });
     } catch (err) {
-        console.error(err?.response?.data || err);
-        res.status(500).json({ message: 'AI error' });
+        res.status(500).json({ error: err.message });
     }
 };

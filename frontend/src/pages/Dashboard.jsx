@@ -118,7 +118,7 @@ export default function Dashboard() {
                     <Link to="/notes/new" className="btn btn-primary">
                         New Note
                     </Link>
-                    <button onClick={handleLogout} className="btn btn-outline">
+                    <button onClick={handleLogout} className="btn btn-primary">
                         Logout
                     </button>
                 </div>

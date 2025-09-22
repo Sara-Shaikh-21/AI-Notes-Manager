@@ -1,6 +1,7 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import api from "../lib/api";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import * as api from "../lib/api"; // Import all named exports as 'api'
 import { useAuth } from "../auth/AuthContext";
 
 function NoteCard({ note, onSummarize, onTranslate }) {
@@ -8,9 +9,15 @@ function NoteCard({ note, onSummarize, onTranslate }) {
         <div className="bg-white p-4 rounded shadow mb-3">
             <div className="flex justify-between items-start">
                 <h3 className="font-semibold">{note.title || "Untitled"}</h3>
-                <div className="text-sm text-slate-500">{new Date(note.created_at).toLocaleString()}</div>
+                <div className="text-sm text-slate-500">
+                    {new Date(note.created_at).toLocaleString()}
+                </div>
             </div>
-            <p className="mt-2 text-sm">{note.content.slice(0, 200)}{note.content.length > 200 && '...'}</p>
+
+            <p className="mt-2 text-sm">
+                {note.content?.slice(0, 200)}
+                {note.content?.length > 200 && "..."}
+            </p>
 
             {note.summary && (
                 <div className="mt-3 p-3 bg-slate-50 rounded">
@@ -19,17 +26,33 @@ function NoteCard({ note, onSummarize, onTranslate }) {
                 </div>
             )}
 
-            {note.translation && Array.isArray(note.translation) && note.translation.length > 0 && (
+            {Array.isArray(note.translation) && note.translation.length > 0 && (
                 <div className="mt-3 p-3 bg-slate-50 rounded">
                     <strong>Translations:</strong>
-                    {note.translation.map((t, i) => <div key={i} className="text-sm">{t.lang}: {t.text}</div>)}
+                    {note.translation.map((t, i) => (
+                        <div key={i} className="text-sm">
+                            {t.lang}: {t.text}
+                        </div>
+                    ))}
                 </div>
             )}
 
             <div className="mt-3 flex gap-2">
-                <button onClick={() => onSummarize(note.id)} className="btn btn-outline">Summarize</button>
-                <button onClick={() => onTranslate(note.id, "Spanish")} className="btn btn-outline">Translate (Spanish)</button>
-                <Link to={`/notes/${note.id}`} className="btn btn-outline">Open</Link>
+                <button
+                    onClick={() => onSummarize(note.id)}
+                    className="btn btn-outline"
+                >
+                    Summarize
+                </button>
+                <button
+                    onClick={() => onTranslate(note.id, "Spanish")}
+                    className="btn btn-outline"
+                >
+                    Translate (Spanish)
+                </button>
+                <Link to={`/notes/${note.id}`} className="btn btn-outline">
+                    Open
+                </Link>
             </div>
         </div>
     );
@@ -37,33 +60,53 @@ function NoteCard({ note, onSummarize, onTranslate }) {
 
 export default function Dashboard() {
     const { logout, user } = useAuth();
+    const navigate = useNavigate();
     const [notes, setNotes] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     const fetchNotes = async () => {
         setLoading(true);
+        setError("");
         try {
-            const res = await api.get("/notes");
-            setNotes(res.data);
+            const res = await api.fetchNotes();
+            setNotes(Array.isArray(res) ? res : []);
         } catch (e) {
             console.error(e);
-        } finally { setLoading(false); }
+            setError("Failed to fetch notes. Please try again.");
+            setNotes([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    useEffect(() => { fetchNotes(); }, []);
+    useEffect(() => {
+        fetchNotes();
+    }, []);
 
     const onSummarize = async (id) => {
         try {
-            await api.post(`/notes/${id}/summarize`);
-            await fetchNotes();
-        } catch (e) { console.error(e); }
+            await api.summarizeNote(id);
+            fetchNotes();
+        } catch (e) {
+            console.error(e);
+            setError("Failed to summarize note.");
+        }
     };
 
     const onTranslate = async (id, lang) => {
         try {
-            await api.post(`/notes/${id}/translate`, { lang });
-            await fetchNotes();
-        } catch (e) { console.error(e); }
+            await api.translateNote(id, lang);
+            fetchNotes();
+        } catch (e) {
+            console.error(e);
+            setError(`Failed to translate note to ${lang}.`);
+        }
+    };
+
+    const handleLogout = () => {
+        logout();
+        navigate("/login", { replace: true });
     };
 
     return (
@@ -72,13 +115,36 @@ export default function Dashboard() {
                 <h1 className="text-2xl font-bold">Dashboard</h1>
                 <div className="flex items-center gap-3">
                     <span className="text-sm text-slate-600">{user?.email}</span>
-                    <Link to="/notes/new" className="btn btn-primary">New Note</Link>
-                    <button onClick={logout} className="btn btn-outline">Logout</button>
+                    <Link to="/notes/new" className="btn btn-primary">
+                        New Note
+                    </Link>
+                    <button onClick={handleLogout} className="btn btn-outline">
+                        Logout
+                    </button>
                 </div>
             </div>
 
-            {loading ? <div>Loading...</div> : notes.length === 0 ? <div>No notes yet</div> : (
-                notes.map(n => <NoteCard key={n.id} note={n} onSummarize={onSummarize} onTranslate={onTranslate} />)
+            {loading && <div>Loading notes...</div>}
+
+            {!loading && error && (
+                <div className="text-red-500 mb-3">{error}</div>
+            )}
+
+            {!loading && !error && notes.length === 0 && (
+                <div>No notes yet</div>
+            )}
+
+            {!loading && !error && notes.length > 0 && (
+                <div>
+                    {notes.map((n) => (
+                        <NoteCard
+                            key={n.id}
+                            note={n}
+                            onSummarize={onSummarize}
+                            onTranslate={onTranslate}
+                        />
+                    ))}
+                </div>
             )}
         </div>
     );

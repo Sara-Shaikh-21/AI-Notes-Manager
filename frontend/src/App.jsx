@@ -15,7 +15,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/Login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 

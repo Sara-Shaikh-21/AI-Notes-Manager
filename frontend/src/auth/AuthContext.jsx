@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "../lib/api";
+import * as api from "../lib/api"; // ✅ updated import
 
 const AuthContext = createContext();
 
@@ -23,17 +23,17 @@ export function AuthProvider({ children }) {
     }, [user]);
 
     const login = async (email, password) => {
-        const res = await api.post("/auth/login", { email, password });
-        if (res?.data?.token) {
-            setUser({ ...res.data.user, token: res.data.token });
+        const res = await api.login({ email, password }); // ✅ use named export
+        if (res?.token) {
+            setUser({ ...res.user, token: res.token });
             return true;
         }
         return false;
     };
 
     const register = async (email, password) => {
-        const res = await api.post("/auth/register", { email, password });
-        return res.data;
+        const res = await api.register({ email, password }); // ✅ use named export
+        return res;
     };
 
     const logout = () => setUser(null);

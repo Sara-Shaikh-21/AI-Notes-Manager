@@ -40,17 +40,17 @@ function NoteCard({ note, onSummarize, onTranslate }) {
             <div className="mt-3 flex gap-2">
                 <button
                     onClick={() => onSummarize(note.id)}
-                    className="btn btn-outline"
+                    className="btn btn-primary"
                 >
                     Summarize
                 </button>
                 <button
                     onClick={() => onTranslate(note.id, "Spanish")}
-                    className="btn btn-outline"
+                    className="btn btn-primary"
                 >
                     Translate (Spanish)
                 </button>
-                <Link to={`/notes/${note.id}`} className="btn btn-outline">
+                <Link to={`/notes/${note.id}`} className="btn btn-primary">
                     Open
                 </Link>
             </div>

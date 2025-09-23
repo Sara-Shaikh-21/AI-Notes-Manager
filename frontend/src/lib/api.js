@@ -27,10 +27,12 @@ export async function login(data) {
 }
 
 // Notes endpoints
-export async function fetchNotes() {
-    const res = await fetch(`${API}/notes`, { headers: { ...authHeaders() } });
+export const fetchNotes = async () => {
+    const res = await fetch("http://localhost:5001/api/notes", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
     return res.json();
-}
+};
 
 export async function getNote(id) {
     const res = await fetch(`${API}/notes/${id}`, { headers: { ...authHeaders() } });

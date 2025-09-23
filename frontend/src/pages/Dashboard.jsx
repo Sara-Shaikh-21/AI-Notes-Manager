@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import * as api from "../lib/api"; // Import all named exports as 'api'
+import * as api from "../lib/api"; // Import API methods
 import { useAuth } from "../auth/AuthContext";
 
 function NoteCard({ note, onSummarize, onTranslate }) {
@@ -65,6 +65,7 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    // Fetch notes from API
     const fetchNotes = async () => {
         setLoading(true);
         setError("");
@@ -84,20 +85,22 @@ export default function Dashboard() {
         fetchNotes();
     }, []);
 
+    // Summarize note
     const onSummarize = async (id) => {
         try {
             await api.summarizeNote(id);
-            fetchNotes();
+            fetchNotes(); // refresh list
         } catch (e) {
             console.error(e);
             setError("Failed to summarize note.");
         }
     };
 
+    // Translate note
     const onTranslate = async (id, lang) => {
         try {
             await api.translateNote(id, lang);
-            fetchNotes();
+            fetchNotes(); // refresh list
         } catch (e) {
             console.error(e);
             setError(`Failed to translate note to ${lang}.`);

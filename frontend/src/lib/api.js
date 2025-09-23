@@ -71,3 +71,14 @@ export async function translateNote(id, lang) {
     });
     return res.json();
 }
+
+
+// export async function summarizeNote(id) {
+//     const res = await api.post(`/notes/${id}/summarize`);
+//     return res.data;
+// }
+
+// export async function translateNote(id, lang) {
+//     const res = await api.post(`/notes/${id}/translate`, { lang });
+//     return res.data;
+// }
